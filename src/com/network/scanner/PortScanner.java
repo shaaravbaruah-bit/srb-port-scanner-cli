@@ -7,14 +7,17 @@ import java.io.IOException;
 
 public class PortScanner {
 
+    static String host;
+    static FileWriter writer;
+
     public static void main(String[] args) {
 
         Scanner sc = new Scanner(System.in);
 
-        System.out.println("===== Java Port Scanner =====");
+        System.out.println("===== Fast Java Port Scanner =====");
 
         System.out.print("Enter host: ");
-        String host = sc.nextLine();
+        host = sc.nextLine();
 
         System.out.print("Start port: ");
         int startPort = sc.nextInt();
@@ -26,43 +29,53 @@ public class PortScanner {
 
         try {
 
-            FileWriter writer = new FileWriter("scan_result.txt");
+            writer = new FileWriter("scan_result.txt");
 
             for(int port = startPort; port <= endPort; port++) {
 
-                try {
+                final int currentPort = port;
 
-                    Socket socket = new Socket(host, port);
-
-                    String service = getService(port);
-
-                    System.out.println("Port " + port + " OPEN (" + service + ")");
-                    writer.write("Port " + port + " OPEN (" + service + ")\n");
-
-                    socket.close();
-
-                }
-
-                catch(Exception e) {
-
-                    System.out.println("Port " + port + " CLOSED");
-                    writer.write("Port " + port + " CLOSED\n");
-
-                }
+                new Thread(() -> scanPort(currentPort)).start();
             }
-
-            writer.close();
-
-            System.out.println("\nScan finished.");
-            System.out.println("Results saved to scan_result.txt");
 
         }
 
         catch(IOException e) {
-            System.out.println("Error writing result file.");
+            System.out.println("Error creating result file.");
         }
 
         sc.close();
+    }
+
+    public static void scanPort(int port) {
+
+        try {
+
+            Socket socket = new Socket(host, port);
+
+            String service = getService(port);
+
+            String result = "Port " + port + " OPEN (" + service + ")";
+
+            System.out.println(result);
+
+            writer.write(result + "\n");
+
+            socket.close();
+
+        }
+
+        catch(Exception e) {
+
+            String result = "Port " + port + " CLOSED";
+
+            System.out.println(result);
+
+            try {
+                writer.write(result + "\n");
+            }
+            catch(IOException ex) {}
+        }
     }
 
     public static String getService(int port) {
